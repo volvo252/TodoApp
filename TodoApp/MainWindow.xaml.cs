@@ -14,15 +14,15 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using TodoApp.Models;
+using TodoApp.Services;
 
 namespace TodoApp
 {
-    /// <summary>
-    /// Логика взаимодействия для MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
-        private BindingList<TodoModel> _todoData;
+        private readonly string PATH = $"{Environment.CurrentDirectory}\\todoDataList.json";
+        private BindingList<TodoModel> _todoDataList;
+        private FileOService _fileOService;
         public MainWindow()
         {
             InitializeComponent();
@@ -30,13 +30,36 @@ namespace TodoApp
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            _todoData = new BindingList<TodoModel>() { 
-                new TodoModel() {Text = "qwe"},
-                new TodoModel() {Text = "adasdw"},
-                new TodoModel() {Text = "2", IsDone = true}
-            };
+            _fileOService = new FileOService(PATH);
 
-            dgTodoList.ItemsSource = _todoData;
+            try
+            {
+                _todoDataList = _fileOService.LoadData();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                Close();
+            }
+
+            dgTodoList.ItemsSource = _todoDataList;
+            _todoDataList.ListChanged += _todoDataList_ListChanged;
+        }
+
+        private void _todoDataList_ListChanged(object sender, ListChangedEventArgs e)
+        {
+            if (e.ListChangedType==ListChangedType.ItemAdded || e.ListChangedType == ListChangedType.ItemDeleted || e.ListChangedType == ListChangedType.ItemChanged)
+            {
+                try
+                {
+                    _fileOService.SaveData(sender);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                    Close();
+                }
+            }
         }
     }
 }
